@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Job Application Platform</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; max-width: 600px; }
+    input, textarea { width: 100%; padding: 10px; margin: 10px 0; }
+    button { padding: 10px 20px; margin-top: 20px; }
+    section { margin-bottom: 40px; }
+  </style>
+</head>
+<body>
+
+  <h2>Step 1: Candidate Details</h2>
+  <section id="step1">
+    <input type="text" id="fullName" placeholder="Full Name" required />
+    <input type="email" id="email" placeholder="Email Address" required />
+    <input type="tel" id="phone" placeholder="Phone Number" required />
+    <button onclick="goToStep(2)">Next</button>
+  </section>
+
+  <h2 style="display:none;">Step 2: Upload Resume</h2>
+  <section id="step2" style="display:none;">
+    <input type="file" id="resume" accept=".pdf,.txt,.docx" required />
+    <button onclick="uploadResume()">Upload & Next</button>
+    <div id="uploadMsg" style="color:green;"></div>
+  </section>
+
+  <h2 style="display:none;">Step 3: Behavioural Questions</h2>
+  <section id="step3" style="display:none;">
+    <label for="answer">Why are you interested in joining this organisation?</label>
+    <textarea id="answer" rows="4" required></textarea>
+
+    <label>Optional Audio/Video Upload:</label>
+    <input type="file" id="media" accept="audio/*,video/*" />
+
+    <button onclick="submitApplication()">Submit Application</button>
+    <div id="submitMsg" style="color:green;"></div>
+  </section>
+
+  <script>
+    let resumeFileName = '';
+
+    function goToStep(step) {
+      document.querySelectorAll('section').forEach((s, i) => {
+        s.style.display = (i + 1 === step) ? 'block' : 'none';
+      });
+      document.querySelectorAll('h2').forEach((h, i) => {
+        h.style.display = (i + 1 === step) ? 'block' : 'none';
+      });
+    }
+
+    async function uploadResume() {
+      const resume = document.getElementById('resume').files[0];
+      if (!resume) {
+        alert("Please select a resume file.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('resume', resume);
+
+      const res = await fetch('http://localhost:3000/upload-resume', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        resumeFileName = data.fileName;
+        document.getElementById('uploadMsg').innerText = "Resume uploaded successfully.";
+        goToStep(3);
+      } else {
+        alert('Resume upload failed.');
+      }
+    }
+
+    async function submitApplication() {
+      const fullName = document.getElementById('fullName').value;
+      const email = document.getElementById('email').value;
+      const phone = document.getElementById('phone').value;
+      const answer = document.getElementById('answer').value;
+      const media = document.getElementById('media').files[0];
+
+      if (!fullName || !email || !phone || !answer) {
+        alert("Please fill all required fields.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('fullName', fullName);
+      formData.append('email', email);
+      formData.append('phone', phone);
+      formData.append('answer', answer);
+      formData.append('resumeFileName', resumeFileName);
+      if (media) formData.append('media', media);
+
+      const res = await fetch('http://localhost:3000/submit-application', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (res.ok) {
+        document.getElementById('submitMsg').innerText = "Application submitted successfully!";
+      } else {
+        alert("Failed to submit application.");
+      }
+    }
+  </script>
+</body>
+</html>
